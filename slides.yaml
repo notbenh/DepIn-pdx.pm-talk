@@ -77,14 +77,14 @@ my $obj = Object->new(table => 'OtherTable', d => DBI->connect(...));
 my $val = $obj->find(...);
 
 # So wait a sec... we just created a very basic 'table object' that we can now pass it just about anything and we get what we want... yup Bingo.
-# 
+# OK so what other handy uses do you know of?
 
-
-
-
-# I have a tendancy to use this concept ALOT when testing: 
+# I have a tendancy to use this concept alot when testing: 
 
 my $test_db = DBI->connect(...), 
 my $obj = Object->new(d=>$test_db);
-is $obj->find(...), 'something';
+is $obj->find(...), 'something'; #never touches live data
+
+
+
 
