@@ -1,12 +1,18 @@
 - Dependency injection 
 - ... in perl. 
-# Not a topic that is specifc to Java or any other buzzwordie-'enterprize' solution, you've likely been doing this for a long time. 
-- Define
-- Dependency injection (DI) in object-oriented computer programming is a technique that indicates to a part of a program which other parts it can use, i.e. to supply an external dependency, or reference, to a software component.
+- First... IoC
+# Lets get this out of the way first
+- Control = rm -rf dir
+- Inverse = rm -ri dir
+- IoC = code asks for help
+- DI?
+- Dependency injection (DI) is an OO in technique that indicates to a part of a program which other parts it can use.
 # in short DI is a lable from OO land, to refer to a practice of being able to shove in something from the outside. 
-
+- non-DI [code]->{dep}
+- DI     [code]<-{dep}
 # ... well that's abstract and super fancy sounding! Let's take a look at a common example:
-
+- ORM-ish EXAMPLE
+# Lets say we have some ORM thing (no not DBIx::Class)
 my $obj = Object->new();
 my $val = $obj->find(this=>'that');
 
@@ -15,12 +21,31 @@ my $val = $obj->find(this=>'that');
 sub find {
   my $self = shift;
   $self->d->selectall_arrayref(
-    $self->qbuild( table => 'SomeTable'
-                 , @_ # our input
-                 )->dbi(Slice=>{});
+    $self->qbuild( from => 'SomeTable'
+                 , where=> {@_} # our input
+                 )->dbi # 
+   ,{Slice=>{}}
+  );
 }
 
 # ok so all find does is take input, toss off to some "make SQL magic thing" (that we will be avoiding for now) and then calling some 'd' thing that appears to be a DBI object... Lets look further
+
+- non-DI way to define 'd'
+
+sub d { 
+  require DBI;
+  DBI->connect(...);
+}
+
+- DI by the books
+
+has d => 
+  is => 'ro',
+  isa => 'DBD::db',
+  required => 1,
+;
+
+- Happy middle ground
 
 has d => 
  is => 'ro',
@@ -33,8 +58,7 @@ has d =>
  
 # Looks like it's just a simple Moose Attribute, because it is. But the interesting thing here is that it stores an object.
 
-- so?
-# What do we think would happen if we did this:
+- what does this give us?
 
 my $obj = Object->new(d=>DBI->connect(...));
 my $val = $obj->find(this=>'that');
@@ -42,17 +66,28 @@ my $val = $obj->find(this=>'that');
 - TADA! that's DI.
 # honestly, this is all that fancy lable means. 
 
-# So why is this important? 
-## First and foremost this is a way of thinking that will allow you to further re-use your code as you are building patterns for solutions that make only vague assumptions on the details. 
+- Advantages? :
+  - testing!
 
+# Also, now that we have super generic objects testing DB driven code is cake as you just swap out the DB: 
+
+my $test_db = DBI->connect(...), 
+my $obj = Object->new(d=>$test_db);
+is $obj->find(...), 'something'; #never touches live data
+
+  - reuse via abstraction
+
+# First and foremost this is a way of thinking that will allow you to further re-use your code as you are building patterns for solutions that make only vague assumptions on the details.  
 # Let's take a look at our find sub again
 
 sub find {
   my $self = shift;
   $self->d->selectall_arrayref(
-    $self->qbuild( table => 'SomeTable'
-                 , where => {@_} # our input
-                 )->dbi(Slice=>{});
+    $self->qbuild( from => 'SomeTable'
+                 , where=> {@_} # our input
+                 )->dbi
+   ,{Slice=>{}}
+  );
 }
 
 # So we have a hardcoded value for the table name, lets fix that because this function now is tightly bound to a specific aspect. 
@@ -66,9 +101,11 @@ has table =>
 sub find {
   my $self = shift;
   $self->d->selectall_arrayref(
-    $self->qbuild( table => $self->table
-                 , where => {@_} # our input
-                 )->dbi(Slice=>{});
+    $self->qbuild( from => $self->table
+                 , where=> {@_} # our input
+                 )->dbi
+   ,{Slice=>{}}
+  );
 }
 
 # now again we have a hook that is accessable from the outside to alter the behavor for find
@@ -77,27 +114,23 @@ my $obj = Object->new(table => 'OtherTable', d => DBI->connect(...));
 my $val = $obj->find(...);
 
 # So wait a sec... we just created a very basic 'table object' that we can now pass it just about anything and we get what we want... yup Bingo.
-# Also, now that we have super generic objects testing DB driven code is cake as you just swap out the DB: 
 
-my $test_db = DBI->connect(...), 
-my $obj = Object->new(d=>$test_db);
-is $obj->find(...), 'something'; #never touches live data
+package My::Table; 
+use Moose;
+extends 'Object'; 
+has '+table' => default => 'Table';
+1;
 
-# That's great that you can do this in moose but eric is complaining, what about non-moose solutions?
+- Disadvantages?:
+  - Complexity
 
-package Object;
-use strict; 
-use warnings;
+printf q{table has %d rows}, DBI->connect(...)->selectcol_arrayref('SELECT count(*) from table')->[0];
 
-sub is_db { shift->isa('DBD::db') }
-sub is_str{ ref(shift) eq '' };
-sub new {
-  require DBI;
-  my $class = shift;
-  my $self  = {@_}; # hack
-  $self->{d}     ||= DBI->connect(...); # no type check
-  $self->{table} ||= 'SomeTable'; # no type check
-  return bless $self, $class;
-};
+  - Confusion
+# just like most things perl... it gives you rope and expects you to be responsible
+my $table = My::Table->new(table=>'other');
 
-sub table { 
+
+
+
+  
