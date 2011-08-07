@@ -77,14 +77,27 @@ my $obj = Object->new(table => 'OtherTable', d => DBI->connect(...));
 my $val = $obj->find(...);
 
 # So wait a sec... we just created a very basic 'table object' that we can now pass it just about anything and we get what we want... yup Bingo.
-# OK so what other handy uses do you know of?
-
-# I have a tendancy to use this concept alot when testing: 
+# Also, now that we have super generic objects testing DB driven code is cake as you just swap out the DB: 
 
 my $test_db = DBI->connect(...), 
 my $obj = Object->new(d=>$test_db);
 is $obj->find(...), 'something'; #never touches live data
 
+# That's great that you can do this in moose but eric is complaining, what about non-moose solutions?
 
+package Object;
+use strict; 
+use warnings;
 
+sub is_db { shift->isa('DBD::db') }
+sub is_str{ ref(shift) eq '' };
+sub new {
+  require DBI;
+  my $class = shift;
+  my $self  = {@_}; # hack
+  $self->{d}     ||= DBI->connect(...); # no type check
+  $self->{table} ||= 'SomeTable'; # no type check
+  return bless $self, $class;
+};
 
+sub table { 
