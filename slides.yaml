@@ -1,10 +1,10 @@
-- Dependency injection 
-- ... in perl. 
-- First... IoC
-# Lets get this out of the way first
-- Control = rm -rf dir
-- Inverse = rm -ri dir
-- IoC = code asks for help
+- Dependency injection : __ ... in perl
+- First... IoC :
+  - Lets get this out of the way first
+  - Control = rm -rf dir
+  - Inverse = rm -ri dir
+  - IoC = code asks for help
+
 - DI?
 - Dependency injection (DI) is an OO in technique that indicates to a part of a program which other parts it can use.
 # in short DI is a lable from OO land, to refer to a practice of being able to shove in something from the outside. 
