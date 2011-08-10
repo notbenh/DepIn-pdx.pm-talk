@@ -32,13 +32,16 @@
   <ul>
     <li class='grey'>Control = rm -rf dir</li>
     <li class='grey'>Inverse = rm -ri dir</li>
-    <li>IoC = code <span class='red'>asks</span> for help</li>
+    <li>IoC = code has an <span class='red'>outside consultant</span></li>
   <ul>
 </section>
 
 <section>
   <h1>Dependency injection (DI)</h1>
-  <q>...is an OO in technique that indicates to a part of a program which other parts it can use.</q>
+<!--  <q>...is an OO in technique that indicates to a part of a program which other parts it can use.</q>
+  <author>paraphrase from wikipedia</author>
+-->
+  <q>... is a design pattern in object-oriented computer programming whose purpose is to reduce the coupling between software components. ... Frequently an object uses (depends on) work produced by another part of the system. With DI, the object does not need to know in advance about how the other part of the system works. Instead, the programmer provides (injects) the relevant system component in advance along with a contract that it will behave in a certain way.</q>
   <details>in short DI is a lable from OO land, to refer to a practice of being able to shove in something from the outside.</details>
 </section>
 
@@ -60,7 +63,7 @@
 </section>
 
 <section>
-  <h1>ORM EXAMPLE TIME</h1>
+  <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code>
     my $obj = Object->new();
@@ -71,7 +74,7 @@
 </section>
 
 <section>
-  <h1>ORM EXAMPLE TIME</h1>
+  <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code>
     sub find {
@@ -79,7 +82,7 @@
       $self->d->selectall_arrayref(
         $self->qbuild( from => 'SomeTable'
                      , where=> {@_} # our input
-                     )->dbi # 
+                     )->dbi 
        ,{Slice=>{}}
       );
     }
@@ -92,7 +95,7 @@
 </section>
 
 <section>
-  <h1>ORM EXAMPLE TIME</h1>
+  <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code class='grey'>
     sub find {
@@ -113,10 +116,12 @@
 </section>
 
 <section>
-  <h1>ORM EXAMPLE TIME</h1>
+  <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code>
     # non-DI way to define 'd'
+    use Memoize;
+    memoize('d');
     sub d { 
       require DBI;
       DBI->connect(...);
@@ -126,7 +131,7 @@
 </section>
 
 <section>
-  <h1>ORM EXAMPLE TIME</h1>
+  <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code>
     # DI by the books
@@ -140,7 +145,7 @@
 </section>
 
 <section>
-  <h1>ORM EXAMPLE TIME</h1>
+  <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code class='grey'>
     # DI by the books
@@ -151,47 +156,6 @@
     ;
   </code>
   </pre>
-</section>
-
-<section>
-  <h1>ORM EXAMPLE TIME</h1>
-  <pre>
-  <code>
-    # Happy middle ground
-    has d => 
-     is => 'ro',
-     isa => 'DBD::db',
-     default => sub{
-       require DBI; 
-       DBI->connect(...)
-     },
-    ;
-  </code>
-  </pre>
-  <details> 
-  Looks like it's just a simple Moose Attribute, because it is. But the interesting thing here is that it stores an object.
-  </details> 
-</section>
-
-<section>
-  <h1>ORM EXAMPLE TIME</h1>
-  <pre>
-  <code class='grey'>
-    # Happy middle ground
-    has d => 
-     is => 'ro',
-     isa => 'DBD::db',
-     <span class='red'>default => sub{
-       require DBI; 
-       DBI->connect(...)
-     },
-     </span>
-    ;
-  </code>
-  </pre>
-  <details> 
-  Looks like it's just a simple Moose Attribute, because it is. But the interesting thing here is that it stores an object.
-  </details> 
 </section>
 
 <section>
@@ -213,89 +177,316 @@
   </code>
   </pre>
 </section>
-<!--
 
-
-- TADA! that's DI.
-# honestly, this is all that fancy lable means. 
-
-- Advantages? :
-  - testing!
-
-# Also, now that we have super generic objects testing DB driven code is cake as you just swap out the DB: 
-
-my $test_db = DBI->connect(...), 
-my $obj = Object->new(d=>$test_db);
-is $obj->find(...), 'something'; #never touches live data
-
-  - reuse via abstraction
-
-# First and foremost this is a way of thinking that will allow you to further re-use your code as you are building patterns for solutions that make only vague assumptions on the details.  
-# Let's take a look at our find sub again
-
-sub find {
-  my $self = shift;
-  $self->d->selectall_arrayref(
-    $self->qbuild( from => 'SomeTable'
-                 , where=> {@_} # our input
-                 )->dbi
-   ,{Slice=>{}}
-  );
-}
-
-# So we have a hardcoded value for the table name, lets fix that because this function now is tightly bound to a specific aspect. 
-
-has table => 
-  is => 'ro', 
-  isa => 'Str',
-  default => 'SomeTable'
-;
-
-sub find {
-  my $self = shift;
-  $self->d->selectall_arrayref(
-    $self->qbuild( from => $self->table
-                 , where=> {@_} # our input
-                 )->dbi
-   ,{Slice=>{}}
-  );
-}
-
-# now again we have a hook that is accessable from the outside to alter the behavor for find
-
-my $obj = Object->new(table => 'OtherTable', d => DBI->connect(...));
-my $val = $obj->find(...);
-
-# So wait a sec... we just created a very basic 'table object' that we can now pass it just about anything and we get what we want... yup Bingo.
-
-package My::Table; 
-use Moose;
-extends 'Object'; 
-has '+table' => default => 'Table';
-1;
-
-- Disadvantages?:
-  - Complexity
-
-printf q{table has %d rows}, DBI->connect(...)->selectcol_arrayref('SELECT count(*) from table')->[0];
-
-  - Confusion
-# just like most things perl... it gives you rope and expects you to be responsible
-my $table = My::Table->new(table=>'other');
-
--->
-
-
+<section>
+  <h1>Advantage?</h1>
+  <ul>
+    <li>Flexability</li>
+  </ul>
 </section>
+
+<section>
+  <h2>Flexability</h2>
+  <pre>
+  <code>
+      require 'DBI'
+      my $db  = DBI->connect(
+                 'dbi:Pg:dbname=Stage'
+                ,''
+                ,''
+                );
+      my $obj = Object->new(d=>$db);
+      # !!! never touches live data
+      my $val = $obj->find(...);
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Flexability</h2>
+  <pre>
+  <code>
+      require 'DBI'
+      my $db  = DBI->connect(
+                 'dbi:SQLite:dbname=./testing.db'
+                ,''
+                ,''
+                );
+      my $obj = Object->new(d=>$db);
+      # !!! never touches live data
+      is $obj->find(...), 'something'; 
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h1>Disadvantage?</h1>
+  <ul>
+    <li>Verbose</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Verbose</h2>
+  <pre>
+  <code>
+    my $obj = Object->new(d=>DBI->connect(...));
+    my $val = $obj->find(this=>'that');
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Verbose</h2>
+  <pre>
+  <code>
+    # Happy middle ground
+    has d => 
+     is => 'ro',
+     isa => 'DBD::db',
+     default => sub{
+       require DBI; 
+       my $connect = is_live  ? ...
+                   : is_stage ? ...
+                   :            ... #testing
+                   ;
+       DBI->connect($connect);
+     },
+    ;
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Verbose</h2>
+  <pre>
+  <code class='grey'>
+    # Happy middle ground
+    has d => 
+     is => 'ro',
+     isa => 'DBD::db',
+     <span class='red'>default => sub{
+       require DBI; 
+       my $connect = is_live  ? ...
+                   : is_stage ? ...
+                   :            ... #testing
+                   ;
+       DBI->connect($connect);
+     },
+     </span>
+    ;
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Verbose</h2>
+  <pre>
+  <code>
+    my $foo = Object->new()->find(...);
+    my $bar = Object->new(d=>$db)->find(...);
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h1>Advantage?</h1>
+  <ul>
+    <li class='grey'>Flexability</li>
+    <li>Reuseability</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Reuseability</h2>
+  <pre>
+  <code>
+    sub find {
+      my $self = shift;
+      $self->d->selectall_arrayref(
+        $self->qbuild( from => 'SomeTable'
+                     , where=> {@_} # our input
+                     )->dbi
+       ,{Slice=>{}}
+      );
+    }
+  </code>
+  </pre>
+  <details>Lets take a look at that find method again</details>
+</section>
+
+<section>
+  <h2>Reuseability</h2>
+  <pre>
+  <code class='grey'>
+    sub find {
+      my $self = shift;
+      $self->d->selectall_arrayref(
+        $self->qbuild( from => '<span class='red'>SomeTable</span>'
+                     , where=> {@_} # our input
+                     )->dbi
+       ,{Slice=>{}}
+      );
+    }
+  </code>
+  </pre>
+  <details>We currently have a hard coded tablename</details>
+</section>
+
+<section>
+  <h2>Reuseability</h2>
+  <pre>
+  <code>
+    has table => 
+      is => 'ro', 
+      isa => 'Str',
+      default => 'SomeTable'
+    ;
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Reuseability</h2>
+  <pre>
+  <code>
+    sub find {
+      my $self = shift;
+      $self->d->selectall_arrayref(
+        $self->qbuild( from => $self->table
+                     , where=> {@_} # our input
+                     )->dbi
+       ,{Slice=>{}}
+      );
+    }
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Reuseability</h2>
+  <pre>
+  <code class='grey'>
+    sub find {
+      my $self = shift;
+      $self->d->selectall_arrayref(
+        $self->qbuild( from => <span class='red'>$self->table</span>
+                     , where=> {@_} # our input
+                     )->dbi
+       ,{Slice=>{}}
+      );
+    }
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Reuseability</h2>
+  <pre>
+  <code>
+    my $obj = Object->new(
+                table => 'OtherTable'
+              , d     => DBI->connect(...)
+              );
+    my $foo = $obj->find(...);
+    my $bar = Object->new()->find(...);
+  </code>
+  </pre>
+  <details> So wait a sec... we just created a very basic 'table object' that we can now pass it just about anything and we get what we want... yup Bingo.
+  </details>
+</section>
+
+<section>
+  <h1>Disadvantage?</h1>
+  <ul>
+    <li class='grey'>Verbose</li>
+    <li>Abstraction</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Abstraction</h2>
+  <pre>
+  <code>
+    my $obj = Object->new(
+                table => 'Other_Table'
+              );
+    my $val = $obj->find(...); 
+    # !!FAIL: 'Other_Table' not found !!
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Abstraction</h2>
+  <pre>
+  <code>
+    package My::OtherTable; 
+    use Moose;
+    extends 'Object'; 
+    has '+table' => default => 'OtherTable';
+    1;
+    my $val = My::OtherTable->new->find(...);
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h1>Disadvantage?</h1>
+  <ul>
+    <li class='grey'>Verbose</li>
+    <li class='grey'>Abstraction</li>
+    <li>Complex</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Complex</h2>
+  <pre>
+  <code>
+    perl -MDBI -e 'printf q{table has %d rows}\
+     DBI->connect(...)->selectcol_arrayref(   \
+     q{SELECT count(*) from table})->[0]'
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h1>now for something completely different</h1>
+  <h2>Bread::Board</h2>
+  <details>Bread::Board is a IoC framework that goes one step further</details>
+</section>
+
+<section>
+  <h2>Bread::Board</h2>
   
+  
+</section>
 
-
+<section>
+  ...
+  <a href='https://metacpan.org/release/Bread-Board'>Bread::Board</a>
+  
+</section>
 
 <!-- Your Style -->
 <!-- Define the style of you presentation -->
 <style>
   .red  { font-weight: bolder }
   .grey { color: #AAAAAA; }
+  q { 
+    margin-right: 50px;
+    margin-left : 50px;
+    display: block;
+  }
+  author { 
+    float: right;
+    margin-right:50px;
+    color: #AAAAAA;
+  }
+  author:before { 
+    content:"- "
+  }
 </style>
 
 <!-- Maybe a font from http://www.google.com/webfonts ? -->
