@@ -7,28 +7,29 @@
   <h1>Dependency injection</h1>
   <h2>... with perl</h2>
   <footer>notbenh </footer>
+  <details>Hello and welcome</details>
 </section>
 
 <section>
   <h1>First... IoC</h1>
-  <details>Lets get this out of the way first</details>
   <ul>
     <li>Control = rm -r<span class='red'>f</span> dir</li>
   <ul>
+  <details>Lets get this out of the way first. Control = I got this.
+  </details>
 </section>
 
 <section>
   <h1>First... IoC</h1>
-  <details>Lets get this out of the way first</details>
   <ul>
     <li class='grey'>Control = rm -rf dir</li>
     <li>Inverse = rm -r<span class='red'>i</span> dir</li>
   <ul>
+  <details>IoC = I just want to make sure I've got this right.</details>
 </section>
 
 <section>
   <h1>First... IoC</h1>
-  <details>Lets get this out of the way first</details>
   <ul>
     <li class='grey'>Control = rm -rf dir</li>
     <li class='grey'>Inverse = rm -ri dir</li>
@@ -50,7 +51,7 @@
   <ul>
     <li>non-DI&nbsp;[code]<span class='red'>-></span>{dep}</li>
   </ul>
-  <details>Ya this is a bit fuzzy</details>
+  <details>In non-DI land your code builds it's own deps, thus it knows the shape and value.</details>
 </section>
 
 <section>
@@ -59,15 +60,15 @@
     <li class='grey'>non-DI&nbsp;[code]->{dep}</li>
     <li>DI&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[code]<span class='red'><-</span>{dep}</li>
   </ul>
-  <details>Ya this is a bit fuzzy</details>
+  <details>In DI land your code only knows the shape of a dep... value is left to the outside world.</details>
 </section>
 
 <section>
   <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code>
-    my $obj = Object->new();
-    my $val = $obj->find(this=>'that');
+    my $orm = ORM->new();
+    my $val = $orm->find(this=>'that');
   </code>
   </pre>
   <details>Lets say we have this ORM-ish thing...</details>
@@ -143,13 +144,11 @@
     sub d { shift->{d} };
   </code>
   </pre>
-  <details>yes this is one way... but ikk... who really wants to do that?</details>
 </section>
 
 <section>
   <!--<h1>ORM-ish EXAMPLE TIME</h1>-->
   <center><h1 class='red'>***</h1></center>
-  <details>yes this is one way... but ikk... who really wants to do that?</details>
 </section>
 
 <section>
@@ -166,7 +165,7 @@
     sub d { shift->{d} };
   </code>
   </pre>
-  <details>yes this is one way... but ikk... who really wants to do that?</details>
+  <details>If we can refactor our code then we could... </details>
 </section>
 
 <section>
@@ -183,7 +182,6 @@
     sub d { shift->{d} };
   </code>
   </pre>
-  <details>yes this is one way... but ikk... who really wants to do that?</details>
 </section>
 
 <section>
@@ -191,18 +189,18 @@
   <pre>
   <code>
     # DI by the books via <span class='red'>evil</span>
-    require Object;
+    require ORM;
     do { no warnings;
          no strict 'refs';
-         *{Object::d} = sub{
+         *{ORM::d} = sub{
            require DBI;
            DBI->connect(...);
          };
     }; # remember this was a method
-    my $obj = Object->new();
+    my $orm = ORM->new();
   </code>
   </pre>
-  <details>yes this is one way... but ikk... who really wants to do that?</details>
+  <details>though if we can't ikk... who really wants to do that?</details>
 </section>
 
 <section>
@@ -237,8 +235,8 @@
   <h1>What does this give us?</h1>
   <pre>
   <code>
-    my $obj = Object->new(d=>DBI->connect(...));
-    my $val = $obj->find(this=>'that');
+    my $orm = ORM->new(d=>DBI->connect(...));
+    my $val = $orm->find(this=>'that');
   </code>
   </pre>
 </section>
@@ -247,8 +245,8 @@
   <h1>What does this give us?</h1>
   <pre>
   <code class='grey'>
-    my $obj = Object->new(<span class='red'>d=>DBI->connect(...)</span>);
-    my $val = $obj->find(this=>'that');
+    my $orm = ORM->new(<span class='red'>d=>DBI->connect(...)</span>);
+    my $val = $orm->find(this=>'that');
   </code>
   </pre>
 </section>
@@ -256,12 +254,12 @@
 <section>
   <h1>Advantage?</h1>
   <ul>
-    <li>Flexability</li>
+    <li>Flexibility</li>
   </ul>
 </section>
 
 <section>
-  <h2>Flexability</h2>
+  <h2>Flexibility</h2>
   <pre>
   <code>
       require 'DBI'
@@ -270,15 +268,15 @@
                 ,''
                 ,''
                 );
-      my $obj = Object->new(d=>$db);
+      my $orm = ORM->new(d=>$db);
       # !!! never touches live data
-      my $val = $obj->find(...);
+      my $val = $orm->find(...);
   </code>
   </pre>
 </section>
 
 <section>
-  <h2>Flexability</h2>
+  <h2>Flexibility</h2>
   <pre>
   <code>
       require 'DBI'
@@ -287,9 +285,9 @@
                 ,''
                 ,''
                 );
-      my $obj = Object->new(d=>$db);
+      my $orm = ORM->new(d=>$db);
       # !!! never touches live data
-      is $obj->find(...), 'something'; 
+      is $orm->find(...), 'something'; 
   </code>
   </pre>
 </section>
@@ -305,8 +303,8 @@
   <h2>Verbose</h2>
   <pre>
   <code>
-    my $obj = Object->new(d=>DBI->connect(...));
-    my $val = $obj->find(this=>'that');
+    my $orm = ORM->new(d=>DBI->connect(...));
+    my $val = $orm->find(this=>'that');
   </code>
   </pre>
 </section>
@@ -358,8 +356,8 @@
   <h2>Verbose</h2>
   <pre>
   <code>
-    my $foo = Object->new()->find(...);
-    my $bar = Object->new(d=>$db)->find(...);
+    my $foo = ORM->new()->find(...);
+    my $bar = ORM->new(d=>$db)->find(...);
   </code>
   </pre>
 </section>
@@ -367,13 +365,13 @@
 <section>
   <h1>Advantage?</h1>
   <ul>
-    <li class='grey'>Flexability</li>
-    <li>Reuseability</li>
+    <li class='grey'>Flexibility</li>
+    <li>Reusability</li>
   </ul>
 </section>
 
 <section>
-  <h2>Reuseability</h2>
+  <h2>Reusability</h2>
   <pre>
   <code>
     sub find {
@@ -391,7 +389,7 @@
 </section>
 
 <section>
-  <h2>Reuseability</h2>
+  <h2>Reusability</h2>
   <pre>
   <code class='grey'>
     sub find {
@@ -409,7 +407,7 @@
 </section>
 
 <section>
-  <h2>Reuseability</h2>
+  <h2>Reusability</h2>
   <pre>
   <code>
     has table => 
@@ -422,7 +420,7 @@
 </section>
 
 <section>
-  <h2>Reuseability</h2>
+  <h2>Reusability</h2>
   <pre>
   <code>
     sub find {
@@ -439,7 +437,7 @@
 </section>
 
 <section>
-  <h2>Reuseability</h2>
+  <h2>Reusability</h2>
   <pre>
   <code class='grey'>
     sub find {
@@ -456,15 +454,15 @@
 </section>
 
 <section>
-  <h2>Reuseability</h2>
+  <h2>Reusability</h2>
   <pre>
   <code>
-    my $obj = Object->new(
+    my $orm = ORM->new(
                 table => 'OtherTable'
               , d     => DBI->connect(...)
               );
-    my $foo = $obj->find(...);
-    my $bar = Object->new()->find(...);
+    my $foo = $orm->find(...);
+    my $bar = ORM->new()->find(...);
   </code>
   </pre>
   <details> So wait a sec... we just created a very basic 'table object' that we can now pass it just about anything and we get what we want... yup Bingo.
@@ -483,10 +481,10 @@
   <h2>Abstraction</h2>
   <pre>
   <code>
-    my $obj = Object->new(
+    my $orm = ORM->new(
                 table => 'Other_Table'
               );
-    my $val = $obj->find(...); 
+    my $val = $orm->find(...); 
     # !!FAIL: 'Other_Table' not found !!
   </code>
   </pre>
@@ -498,7 +496,7 @@
   <code>
     package My::OtherTable; 
     use Moose;
-    extends 'Object'; 
+    extends 'ORM'; 
     has '+table' => default => 'OtherTable';
     1;
     my $val = My::OtherTable->new->find(...);
