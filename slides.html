@@ -134,7 +134,82 @@
   <h1>ORM-ish EXAMPLE TIME</h1>
   <pre>
   <code>
-    # DI by the books
+    # non-DI way to define 'd'
+    sub new {
+      require DBI;
+      return bless {d => DBI->connect(...)
+                   }, shift;
+    }
+    sub d { shift->{d} };
+  </code>
+  </pre>
+  <details>yes this is one way... but ikk... who really wants to do that?</details>
+</section>
+
+<section>
+  <!--<h1>ORM-ish EXAMPLE TIME</h1>-->
+  <center><h1 class='red'>***</h1></center>
+  <details>yes this is one way... but ikk... who really wants to do that?</details>
+</section>
+
+<section>
+  <h1>ORM-ish EXAMPLE TIME</h1>
+  <pre>
+  <code>
+    # DI by the books 
+    sub new {
+      my $class = shift;
+      my %opts  = @_;
+      die unless $opts{d}->isa('DBD::db');
+      return bless {d=>$opts{d}}, $class; 
+    }
+    sub d { shift->{d} };
+  </code>
+  </pre>
+  <details>yes this is one way... but ikk... who really wants to do that?</details>
+</section>
+
+<section>
+  <h1>ORM-ish EXAMPLE TIME</h1>
+  <pre>
+  <code class='grey'>
+    # DI by the books 
+    sub new {
+      my $class = shift;
+      <span class='red'>my %opts  = @_;
+      die unless $opts{d}->isa('DBD::db');</span>
+      return bless {d=><span class='red'>$opts{d}</span>}, $class; 
+    }
+    sub d { shift->{d} };
+  </code>
+  </pre>
+  <details>yes this is one way... but ikk... who really wants to do that?</details>
+</section>
+
+<section>
+  <h1>ORM-ish EXAMPLE TIME</h1>
+  <pre>
+  <code>
+    # DI by the books via <span class='red'>evil</span>
+    require Object;
+    do { no warnings;
+         no strict 'refs';
+         *{Object::d} = sub{
+           require DBI;
+           DBI->connect(...);
+         };
+    }; # remember this was a method
+    my $obj = Object->new();
+  </code>
+  </pre>
+  <details>yes this is one way... but ikk... who really wants to do that?</details>
+</section>
+
+<section>
+  <h1>ORM-ish EXAMPLE TIME</h1>
+  <pre>
+  <code>
+    # DI by the books via Moose
     has d => 
       is => 'ro',
       isa => 'DBD::db',
@@ -191,7 +266,7 @@
   <code>
       require 'DBI'
       my $db  = DBI->connect(
-                 'dbi:Pg:dbname=Stage'
+                 <span class='red'>'dbi:Pg:dbname=Stage'</span>
                 ,''
                 ,''
                 );
@@ -208,7 +283,7 @@
   <code>
       require 'DBI'
       my $db  = DBI->connect(
-                 'dbi:SQLite:dbname=./testing.db'
+                 <span class='red'>'dbi:SQLite:dbname=./testing.db'</span>
                 ,''
                 ,''
                 );
@@ -446,27 +521,357 @@
   <code>
     perl -MDBI -e 'printf q{table has %d rows}\
      DBI->connect(...)->selectcol_arrayref(   \
-     q{SELECT count(*) from table})->[0]'
+     q{SELECT count(*) FROM table})->[0]'
   </code>
   </pre>
 </section>
 
 <section>
   <h1>now for something completely different</h1>
-  <h2>Bread::Board</h2>
+  <h1>Bread::Board</h1>
   <details>Bread::Board is a IoC framework that goes one step further</details>
 </section>
 
 <section>
-  <h2>Bread::Board</h2>
-  
-  
+  <h1>Bread::Board</h1>
+  <q>... is an inversion of control framework with a focus on dependency injection and lifecycle management. It's goal is to help you write more decoupled objects and components by removing the need for you to manually wire those objects/components together.</q>
+  <author>Stevan Little</author>
+  <details> BB sees the world a bit diffrently then we tend to look at objects</details>
 </section>
 
 <section>
-  ...
-  <a href='https://metacpan.org/release/Bread-Board'>Bread::Board</a>
-  
+  <h1>Bread::Board</h1>
+  <pre> 
+  <code>
+    # First, a container
+    my $c = Bread::Board::Container->new( 
+              name => 'Application' 
+            );
+  </code>
+</section>
+
+<section>
+  <h1>Bread::Board</h1>
+  <pre> 
+  <code>
+    # Next, we add a service to that container
+    $c->add_service(
+        Bread::Board::BlockInjection->new(
+            name  => 'db_conn',
+            block => sub { DBI->connect(...) },
+        )
+    );
+  </code>
+</section>
+
+<section>
+  <h1>Bread::Board</h1>
+  <pre> 
+  <code>
+    # Now to access our logger: 
+    my $db = $c->resolve(
+                   service => 'db_conn'
+                 );
+    my $val = $db->selectall_arrayref(...);
+  </code>
+</section>
+
+<section>
+  <h1>draoB::daerB</h1>
+  <center><q>Seems backwards, just use Moose!</q></center>
+</section>
+
+<section>
+  <h1>draoB::daerB</h1>
+  <pre>
+  <code class='smaller'>
+    package Application;
+    use Moose;
+    has db_conn => 
+      is => 'ro', 
+      isa => 'DBD::db',
+      default => sub{ DBI->connect(...) )
+    ;
+  </code>
+  </pre>
+  <details>This would do the same thing, and it's shorter!</details>
+</section>
+
+<section>
+  <h1>Why Bread::Board</h1>
+  <ul>
+    <li>Manages dependency relationships</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Manages dependency relationships</h2>
+  <pre>
+  <code class='smaller'>
+    $c->add_service(
+      Bread::Board::BlockInjection->new(
+        name  => 'logger',
+        block => sub {
+          my $service = shift;
+          Logger->new(
+            db_conn => $service->param('db_conn'),
+          );
+        },
+        <span class='red'>dependencies => {
+          db_conn => Bread::Board::Dependency->new(
+                      service_path => 'db_conn'
+          ),
+        }</span>
+     )
+    );
+  </code>
+  </pre>
+  <details>So Bread::Board allows you to map out the things that do stuff, and then you can stich them together to do extra stuff</details>
+</section>
+
+<section>
+  <h1>draoB::daerB</h1>
+  <pre>
+  <code class='smaller'>
+    package Application;
+    use Moose;
+    has db_conn => 
+      is => 'ro', 
+      isa => 'DBD::db',
+      <span class='red'>lazy => 1</span>,
+      default => sub{ DBI->connect(...) )
+    ;
+    has logger => 
+      is => 'ro', 
+      isa => 'Logger',
+      default => sub{ 
+        Logger->new(db_conn => shift->db_conn) 
+      }
+    ;
+  </code>
+  </pre>
+  <details>This would do the same thing, and it's shorter!</details>
+</section>
+
+<section>
+  <h1>Why Bread::Board</h1>
+  <ul>
+    <li class='grey'>Manages dependency relationships</li>
+    <li>Manages dependency lifecycle</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Manages dependency lifecycle</h2>
+  <pre>
+  <code>
+    $c->add_service(
+        Bread::Board::BlockInjection->new(
+            <span class='red'>lifecycle => 'Singleton'</span>,
+            name  => 'db_conn',
+            block => sub { DBI->connect(...) },
+        )
+    );
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h1>Why Bread::Board</h1>
+  <ul>
+    <li class='grey'>Manages dependency relationships</li>
+    <li class='grey'>Manages dependency lifecycle</li>
+    <li>Multiple types of injection</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Multiple types of injection</h2>
+  <ul>
+    <li>BlockInjection</li>
+  </ul>
+  <pre>
+  <code>
+    $c->add_service(
+        Bread::Board::<span class='red'>BlockInjection</span>->new(
+            name  => 'db_conn',
+            block => sub { DBI->connect(...) },
+        )
+    );
+  </code>
+  </pre>
+  <details> The I know what I'm doing and can do it my self injection</details>
+</section>
+
+<section>
+  <h2>Multiple types of injection</h2>
+  <ul>
+    <li class='grey'>BlockInjection</li>
+    <li>ConstructorInjection</li>
+  </ul>
+  <pre>
+  <code class='smaller'>
+     $c->add_service(
+        Bread::Board::<span class='red'>ConstructorInjection</span>->new(
+          name         => 'authenticator',
+          class        => 'Authenticator',
+          dependencies => {
+            db_conn => Bread::Board::Dependency->new(
+              service_path => 'db_conn'
+            ),
+          }
+       )
+     );
+  </code>
+  </pre>
+  <details> The toss the deps in to the constructor injector.</details>
+</section>
+
+<section>
+  <h2>Multiple types of injection</h2>
+  <ul>
+    <li class='grey'>BlockInjection</li>
+    <li>ConstructorInjection</li>
+  </ul>
+  <pre>
+  <code>
+    require Authenticator;
+    my $auth = Authenticator->new(
+                db_conn => $c->resolve( 
+                            service => 'db_conn' 
+                           )
+              );
+  </code>
+  </pre>
+  <details> The I know what I'm doing and can do it my self injection</details>
+</section>
+
+<section>
+  <h2>Multiple types of injection</h2>
+  <ul>
+    <li class='grey'>BlockInjection</li>
+    <li class='grey'>ConstructorInjection</li>
+    <li>SetterInjection</li>
+  </ul>
+  <pre>
+  <code class='smaller'>
+    $c->add_service(
+        Bread::Board::SetterInjection->new(
+            name         => 'json',
+            class        => 'JSON',
+            dependencies => {
+                utf8   => Bread::Board::Literal->new(
+                    name  => 'true',
+                    value => 1
+                )
+            }
+        )
+    );
+  </code>
+</section>
+
+<section>
+  <h2>Multiple types of injection</h2>
+  <ul>
+    <li class='grey'>BlockInjection</li>
+    <li class='grey'>ConstructorInjection</li>
+    <li>SetterInjection</li>
+  </ul>
+  <pre>
+  <code>
+    require JSON;
+    my $json = JSON->new;
+    $json->utf8(1);
+  </code>
+</section>
+
+<section>
+  <h1>Why Bread::Board</h1>
+  <ul>
+    <li class='grey'>Manages dependency relationships</li>
+    <li class='grey'>Manages dependency lifecycle</li>
+    <li class='grey'>Multiple types of injection</li>
+    <li>Hierarchal Containers</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Hierarchal Containers</h2>
+  <pre>
+  <code>
+    my $app = Bread::Board::Container->new( 
+        name => 'app' 
+    );
+    my $db  = Bread::Board::Container->new( 
+        name => 'database' 
+    );
+  </code>
+  </pre>
+</section>
+
+<section>
+  <h2>Hierarchal Containers</h2>
+  <pre style='font-size:80%;'>
+  <code class='smaller'>
+   $db->add_service(
+       Bread::Board::BlockInjection->new(
+         name  => 'connection'
+         block => sub { my $s = shift;
+                        return DBI->connect(
+                           'dbi:mysql:test',
+                           $s->param('username'),
+                           $s->param('password')
+                      )},
+         dependencies => {
+           username => Bread::Board::Literal->new(
+              name  => 'username',
+              value => 'user'
+           ),
+           password => Bread::Board::Literal->new(
+              name  => 'password',
+              value => '****'
+           ),
+         }));
+  </code>
+  </pre>
+</section>
+     
+<section>
+  <h2>Hierarchal Containers</h2>
+  <pre>
+  <code class='smaller'>
+   $app-><span class='red'>add_sub_container</span>( $db );
+   $app->add_service(
+       Bread::Board::ConstructorInjection->new(
+            name         => 'app',
+            class        => 'Application',
+            dependencies => {
+                db_conn => Bread::Board::Dependency->new(
+                    service_path => <span class='red'>'/database/db_conn'</span>
+                ),
+            }
+        )
+    );
+  </code>
+  </pre>
+</section>
+
+
+<!-- ---------------------------------------------------------------- -->
+<section>
+  <center><h1>???<h1></center>
+</section>
+
+<section>
+  <h1>Thank you!</h1>
+  <ul>
+    <li> <a href='https://metacpan.org/author/STEVAN'>STEVAN</a> for <a href='https://metacpan.org/release/Bread-Board'>Bread::Board</a> </li>
+    <li> <a href='https://github.com/paulrouget'>Paul Rouget</a> for <a href='https://github.com/paulrouget/dzslides'>DZslides</a></li>
+  </ul>
+  <h2>About talk</h2>
+  <ul>
+    <li> Slides on GitHub <a href='https://github.com/notbenh/DepIn-pdx.pm-talk'>DepIn-pdx.pm-talk</a> </li>
+  </ul> 
 </section>
 
 <!-- Your Style -->
@@ -474,6 +879,7 @@
 <style>
   .red  { font-weight: bolder }
   .grey { color: #AAAAAA; }
+  .smaller { font-size: 90%; }
   q { 
     margin-right: 50px;
     margin-left : 50px;
@@ -487,6 +893,8 @@
   author:before { 
     content:"- "
   }
+  center {margin-top:100px;}
+  center h1 { font-size:400px }
 </style>
 
 <!-- Maybe a font from http://www.google.com/webfonts ? -->
